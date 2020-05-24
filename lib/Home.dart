@@ -1,3 +1,4 @@
+import 'package:bitcoin1/Post.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http ; 
 import 'dart:convert';
@@ -11,11 +12,21 @@ class _HomeState extends State<Home> {
  
     static var _logo = AssetImage("imagens/bitcoin.png");
   
-    Future<Map> Conecao() async{
-       String url = "https://blockchain.info/ticker";
-       http.Response response =  await http.get(url);
-      return  json.decode(response.body);
+  String _urlBase = "https://jsonplaceholder.typicode.com"; 
+
+       
       
+    Future<List<Post>> Recuperar_postagens() async{
+      
+     http.Response response = await http.get(_urlBase + "/posts");
+    var dadosJson = json.decode(response.body);
+      List<Post> postagens = List();
+      for (var post in dadosJson){
+        Post p = new Post(post["userId"],post["id"], post["title"], post["body"]);
+      
+        postagens.add(p);
+      }
+ return postagens;
      }
 
   @override
@@ -23,19 +34,26 @@ class _HomeState extends State<Home> {
   
     
   
-    return  FutureBuilder<Map>(
+    return  Scaffold(
+     appBar: AppBar(
+       title: Text("Consumo de serviço avançado"),
 
-      future: Conecao(),
+     ),
+     body: FutureBuilder<List<Post>>(
+
+      future: Recuperar_postagens(),
       builder: (context, snapshot) {
-        String _resultado;
+      
         switch(snapshot.connectionState){
 
           case ConnectionState.none:
-          _resultado = "R\$ 0 ";
+     
           break;
 
           case ConnectionState.waiting:
-          _resultado = "Carregando...";
+       return Center(
+          child: CircularProgressIndicator(),
+       );
           break;
 
           case ConnectionState.active:
@@ -43,53 +61,32 @@ class _HomeState extends State<Home> {
 
           case ConnectionState.done:
             if(snapshot.hasError){
-              _resultado = "Erro no servidor";
+          print("deu ruim");
             } else {
-              String _valor = snapshot.data["BRL"]["buy"].toString();
-               _resultado = "R\$ ${_valor}";
-            }
-            break;
+             
+            return ListView.builder(
+              itemCount: snapshot.data.length,
+              itemBuilder:(context,index){
+
+                    List<Post> lista = snapshot.data;
+                    Post post = lista[index];
+                    
+
+
+                  return ListTile(
+                    title: Text(post.title),
+                    subtitle: Text(post.id.toString()), 
+                  );
+              },
+            );
             }     
-     return Scaffold(
-       
-        body: Container(
-          width: double.infinity,
-          padding: EdgeInsets.all(28),
-          decoration: BoxDecoration(
-            border:Border.all(width: 3,color:Colors.amber),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              Image(image: _logo),
-              Padding(padding: EdgeInsets.only(top:25,bottom: 15),
-              child: Text(" ${_resultado}",
-              style: TextStyle(
-                fontSize:29,
-                
-              ),
-              ),
-              ),
-            FlatButton(
-              onPressed: Conecao,
-              
-             child: Text("Atualizar",
-             style: TextStyle(
-               color: Colors.white,
-             ),
-             ),
-             color: Colors.orange,
-             padding: EdgeInsets.fromLTRB(25, 13, 25, 13),
-             ),
-            ],
-          ),
-        ),
-      
-    
-    );
+        break;
       }
+      }
+    ),
+      
     );
-    
+      
     
     
     
